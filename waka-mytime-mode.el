@@ -35,24 +35,20 @@
 (defconst wakame-mode-user-agent "emacs-wakatime")
 
 
-(defgroup wakame-mode nil
+(defgroup wakame nil
   "Customizations for WakaTime native mode."
   :group 'convenience
-  :prefix "wakame-mode-")
+  :prefix "wakame")
 
-(defcustom wakame-mode-api-url "https://wakapi.dev/api"
+(defcustom wakame-api-url "https://wakapi.dev/api"
   "API URL for WakaTime."
   :type 'string
-  :group 'wakame-mode)
+  :group 'wakame)
 
-
-(defcustom wakame-cache-file "~/.cache/wakame-mode.cache"
+(defcustom wakame-cache-file (file-name-concat (xdg-cache-home) "wakame-mode.cache")
   "File path used for caching WakaTime heartbeats when offline."
   :type 'string
-  :group 'wakame-mode)
-
-(defvar wakame-api-key
-  "API Key populated from Auth-Source")
+  :group 'wakame)
 
 (defvar wakame--heartbeats '()
   "List of heartbeats yet to be sent to wakatime.")
@@ -98,15 +94,18 @@ If SAVEP is non-nil record writing heartbeat"
 
 (defun wakame--send-heartbeat(heartbeat)
   "Sends heartbeat to configured API server."
-  (let ((url-request-method "POST")
-        (url-request-data (json-encode heartbeat))
-        (url-request-extra-headers
-         `(("Authorization" . ,(format "Basic %s" (base64-encode-string wakame-api-key)))
-           ("Content-Type" . "application/json")
-           ("X-Machine-Name" . ,(system-name)))))
+  (let* ((url-request-method "POST")
+         (url-request-data (json-encode heartbeat))
+         (secret (car (auth-source-search :host (url-host (url-generic-parse-url waka-mytime-api-url))
+                                          :user "wakame" :max 1)))
+         (url-request-extra-headers
+          `(("Authorization" . ,(format "Basic %s" (base64-encode-string (funcall (plist-get secret :secret)))))
+            ("Content-Type" . "application/json")
+            ("X-Machine-Name" . ,(system-name)))))
     (url-retrieve
-     (format "%s/heartbeat" wakame-mode-api-url)
+     (format "%s/heartbeat" wakame-api-url)
      (lambda(status)
+       ;; TOOD: Fix error handling
        (if (plist-get status 'error)
            (message "Error posting heartbeat: %s" (plist-get status 'error))
          (delete heartbeat wakame--heartbeats)))
@@ -144,7 +143,7 @@ to the heartbeat last in past 2 minutes"
 (defun wakame--handle-save()
   (wakame--add-heartbeat (wakame--create-heartbeat t)))
 
-(defun wakame--buffer-change(frame)
+(defun wakame--buffer-change(&optional frame)
   "Handler for buffer focus changes."
   (wakame--add-heartbeat (wakame--create-heartbeat nil)))
 
@@ -152,7 +151,7 @@ to the heartbeat last in past 2 minutes"
   "Add hooks to enable wakame tracking."
   (add-to-list 'window-selection-change-functions #'wakame--buffer-change)
   (add-hook 'first-change-hook 'wakame--buffer-change nil t)
-  (add-hook 'after-save-hook #'wakame-handle-save nil t))
+  (add-hook 'after-save-hook #'wakame--handle-save nil t))
 
 (defun wakame-mode--disable()
   "Remove hooks and disable wakame tracking."
@@ -163,7 +162,6 @@ to the heartbeat last in past 2 minutes"
 ;;;###autoload
 (define-minor-mode wakame-mode
   "Toggle WakaMeMode (WakaTime Native mode)."
-  :lighter    " waka"
   :init-value nil
   :global     nil
   :group      'wakame
