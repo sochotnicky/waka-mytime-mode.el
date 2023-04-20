@@ -96,7 +96,7 @@ If SAVEP is non-nil record writing heartbeat"
   "Sends heartbeat to configured API server."
   (let* ((url-request-method "POST")
          (url-request-data (json-encode heartbeat))
-         (secret (car (auth-source-search :host (url-host (url-generic-parse-url waka-mytime-api-url))
+         (secret (car (auth-source-search :host (url-host (url-generic-parse-url wakame-api-url))
                                           :user "wakame" :max 1)))
          (url-request-extra-headers
           `(("Authorization" . ,(format "Basic %s" (base64-encode-string (funcall (plist-get secret :secret)))))
