@@ -1,4 +1,4 @@
-;;; waka-mytime-mode.el --- Description -*- lexical-binding: t; -*-
+;;; wakame-mode.el --- wakatime mode in elisp -*- lexical-binding: t; -*-
 ;;
 ;; Copyright (C) 2023 Stanislav Ochotnický
 ;;
@@ -8,7 +8,7 @@
 ;; Modified: April 17, 2023
 ;; Version: 0.0.1
 ;; Keywords: convenience data docs files languages lisp  tools
-;; Homepage: https://github.com/sochotnicky/waka-mytime-mode
+;; Homepage: https://github.com/sochotnicky/wakame-mode
 ;; Package-Requires: ((emacs "28.2"))
 ;;
 ;; This file is not part of GNU Emacs.
@@ -31,107 +31,107 @@
 (require 'project)
 (require 'json)
 
-(defconst waka-mytime-version "0.0.1")
-(defconst waka-mytime-user-agent "emacs-wakatime")
+(defconst wakame-mode-version "0.0.1")
+(defconst wakame-mode-user-agent "emacs-wakatime")
 
 
-(defgroup waka-mytime nil
+(defgroup wakame-mode nil
   "Customizations for WakaTime native mode."
   :group 'convenience
-  :prefix "waka-mytime-")
+  :prefix "wakame-mode-")
 
-(defcustom waka-mytime-api-url "https://wakapi.dev/api"
+(defcustom wakame-mode-api-url "https://wakapi.dev/api"
   "API URL for WakaTime."
   :type 'string
-  :group 'waka-mytime)
+  :group 'wakame-mode)
 
 
-(defcustom waka-mytime-cache-file "~/.cache/waka-mytime.cache"
+(defcustom wakame-mode-cache-file "~/.cache/wakame-mode.cache"
   "File path used for caching WakaTime heartbeats when offline."
   :type 'string
-  :group 'waka-mytime)
+  :group 'wakame-mode)
 
-(defvar waka-mytime-api-key
+(defvar wakame-mode-api-key
   "API Key populated from Auth-Source")
 
-(defvar waka-mytime--heartbeats '()
+(defvar wakame-mode--heartbeats '()
   "List of heartbeats yet to be sent to wakatime.")
 
-(defun waka-mytime--pretty-mode()
+(defun wakame-mode--pretty-mode()
   "Return nice human-readable type of current file/buffer."
   (if (buffer-file-name)
       (if (listp mode-name)
           (car mode-name)
         mode-name)))
 
-(defun waka-mytime--current-type()
+(defun wakame-mode--current-type()
   "Return whether current buffer is file backed or considered an app."
   (if (buffer-file-name)
       "file"
     "app"))
 
-(defun waka-mytime--current-entity()
+(defun wakame-mode--current-entity()
   "Return path of current entity or app name - i.e. major mode."
   (or (buffer-file-name)
       (symbol-name major-mode)))
 
-(defun waka-mytime--create-heartbeat(savep)
+(defun wakame-mode--create-heartbeat(savep)
   "Return a new heartbeat.
 
 If SAVEP is non-nil record writing heartbeat"
   `(
-    (type . ,(waka-mytime--current-type))
+    (type . ,(wakame-mode--current-type))
     (time . ,(float-time))
     (branch . ,(magit-get-current-branch))
     (project . ,(if (project-current) (project-name (project-current)) ""))
-    (language . ,(waka-mytime--pretty-mode))
+    (language . ,(wakame-mode--pretty-mode))
     (is_write . ,savep)
     ;; See ParseUserAgent at https://github.com/muety/wakapi/blob/master/utils/http.go
     (user_agent . ,(format "wakatime/unset (linux-unset) Emacs emacs-wakatime/1.0"))
-    (entity . ,(waka-mytime--current-entity))))
+    (entity . ,(wakame-mode--current-entity))))
 
-(defun waka-mytime--send-heartbeat(heartbeat)
+(defun wakame-mode--send-heartbeat(heartbeat)
   "Sends heartbeat to configured API server."
   (let ((url-request-method "POST")
         (url-request-data (json-encode heartbeat))
         (url-request-extra-headers
-         `(("Authorization" . ,(format "Basic %s" (base64-encode-string waka-mytime-api-key)))
+         `(("Authorization" . ,(format "Basic %s" (base64-encode-string wakame-mode-api-key)))
            ("Content-Type" . "application/json")
            ("X-Machine-Name" . ,(system-name)))))
     (url-retrieve
-     (format "%s/heartbeat" waka-mytime-api-url)
+     (format "%s/heartbeat" wakame-mode-api-url)
      (lambda(status)
        (if (plist-get status 'error)
            (message "Error posting heartbeat: %s" (plist-get status 'error))
-         (delete heartbeat waka-mytime--heartbeats)))
+         (delete heartbeat wakame-mode--heartbeats)))
      nil
      t
      t)))
 
-(defun waka-mytime--save-heartbeat(heartbeat)
-  (if (file-exists-p waka-mytime-cache-file)
+(defun wakame-mode--save-heartbeat(heartbeat)
+  (if (file-exists-p wakame-mode-cache-file)
       (with-temp-buffer
-        (insert-file-contents waka-mytime-cache-file)
+        (insert-file-contents wakame-mode-cache-file)
         (setq-local cache-data (read (current-buffer)))
         (add-to-list 'cache-data heartbeat)
         (delete-region (point-min) (point-max))
         (insert (prin1-to-string cache-data))
-        (write-region (point-min) (point-max) waka-mytime-cache-file nil 'quiet))
+        (write-region (point-min) (point-max) wakame-mode-cache-file nil 'quiet))
     (with-temp-buffer
       (insert (prin1-to-string (cons heartbeat '())))
-      (write-region (point-min) (point-max) waka-mytime-cache-file nil 'quiet))))
+      (write-region (point-min) (point-max) wakame-mode-cache-file nil 'quiet))))
 
-(defun waka-mytime--buffer-change(frame)
-  (add-to-list 'waka-mytime--heartbeats (waka-mytime--create-heartbeat nil)))
+(defun wakame-mode--buffer-change(frame)
+  (add-to-list 'wakame-mode--heartbeats (wakame-mode--create-heartbeat nil)))
 
-(defun waka-mytime--buffer-change(frame)
-  (add-to-list 'waka-mytime--heartbeats (waka-mytime--create-heartbeat nil)))
+(defun wakame-mode--buffer-change(frame)
+  (add-to-list 'wakame-mode--heartbeats (wakame-mode--create-heartbeat nil)))
 
-(add-to-list 'window-selection-change-functions 'waka-mytime--buffer-change)
+(add-to-list 'window-selection-change-functions 'wakame-mode--buffer-change)
 (add-hook 'after-save-hook
           (lambda()
-            (add-to-list 'waka-mytime--heartbeats (waka-mytime--create-heartbeat t)))
+            (add-to-list 'wakame-mode--heartbeats (wakame-mode--create-heartbeat t)))
           nil t)
 
-(provide 'waka-mytime-mode)
-;;; waka-mytime-mode.el ends here
+(provide 'wakame-mode)
+;;; wakame-mode.el ends here

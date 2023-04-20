@@ -2,10 +2,10 @@
 
 *NOTE*: This is still early stage development
 
-`waka-mytime-mode` is a non-official wakatime mode for Emacs. It's a
+`wakame-mode` is a non-official wakatime mode for Emacs. It's a
 re-implementation of [[https://github.com/wakatime/wakatime-mode][wakatime-mode]] without relying on [[https://github.com/wakatime/wakatime-cli][wakatime-cli]] and instead
-makes API calls using [[https://tkf.github.io/emacs-request/][request.el]]. It is only tested with [[https://github.com/muety/wakapi][wakapi]] and might or
-might not work with [[https://wakatime.com][wakatime.com]].
+makes API calls directly. It is only tested with [[https://github.com/muety/wakapi][wakapi]] and might or might not
+work with [[https://wakatime.com][wakatime.com]].
 
 Main reason for this re-implementation is lack of some features when working
 with official wakatime-mode and wakatime-cli. Specifically with native
