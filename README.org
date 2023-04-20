@@ -24,3 +24,5 @@ implementation we get:
   (untested)?
 - We spoof user agent because wakapi ignores editor/OS in heartbeats and instead
   parses user agent to detect these.
+- Hard dependencies on magit and maybe others
+- No hooks, ignores etc to tweak behaviour easily
