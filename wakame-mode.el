@@ -95,28 +95,6 @@ If SAVEP is non-nil record writing heartbeat"
     (user_agent . ,(format "wakatime/unset (linux-unset) Emacs emacs-wakatime/1.0"))
     (entity . ,(wakame--current-entity))))
 
-(defun wakame--send-heartbeat(heartbeat)
-  "Sends heartbeat to configured API server."
-  (let* ((url-request-method "POST")
-         (url-request-data (json-encode heartbeat))
-         (secret (car (auth-source-search :host (url-host (url-generic-parse-url wakame-api-url))
-                                          :user "wakame" :max 1)))
-         (url-request-extra-headers
-          `(("Authorization" . ,(format "Basic %s" (base64-encode-string (funcall (plist-get secret :secret)))))
-            ("Content-Type" . "application/json")
-            ("X-Machine-Name" . ,(system-name)))))
-    (url-retrieve
-     (format "%s/heartbeat" wakame-api-url)
-     (lambda(status)
-       ;; TOOD: Fix error handling
-       (message (prin1-to-string status))
-       (if (plist-get status 'error)
-           (message "Error posting heartbeat: %s" (plist-get status 'error))
-         (setq wakame--heartbeats (delete heartbeat wakame--heartbeats)))
-     nil
-     t
-     t))))
-
 (defun wakame--send-all-heartbeats ()
   "Sends next batch of 25 heartbeats using bulk API endpoint."
   (if-let* ((url-request-method "POST")
@@ -166,7 +144,6 @@ to the heartbeat last in past 2 minutes"
 
 (defun wakame-mode--enable()
   "Add hooks to enable wakame tracking."
-  ;; TODO: Set timer
   (setq wakame--idle-timer (run-with-idle-timer 10 t #'wakame--send-all-heartbeats))
   (add-to-list 'window-selection-change-functions #'wakame--buffer-change)
   (add-hook 'first-change-hook 'wakame--buffer-change nil t)
