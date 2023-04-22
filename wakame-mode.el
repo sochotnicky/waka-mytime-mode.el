@@ -61,10 +61,10 @@
         mode-name)))
 
 (defvar wakame--last-heartbeat-entity nil
-  "Value of last entity that was added to the heartbeats")
+  "Value of last entity that was added to the heartbeats.")
 
 (defvar wakame--last-heartbeat-time nil
-  "Time of of last heartbeat was added")
+  "Time of of last heartbeat was added.")
 
 (defun wakame--current-type()
   "Return whether current buffer is file backed or considered an app."
@@ -106,15 +106,16 @@ If SAVEP is non-nil record writing heartbeat"
      (format "%s/heartbeat" wakame-api-url)
      (lambda(status)
        ;; TOOD: Fix error handling
+       (message (prin1-to-string status))
        (if (plist-get status 'error)
            (message "Error posting heartbeat: %s" (plist-get status 'error))
-         (delete heartbeat wakame--heartbeats)))
+         (setq wakame--heartbeats (delete heartbeat wakame--heartbeats)))
      nil
      t
-     t)))
+     t))))
 
 (defun wakame--add-heartbeat(heartbeat)
-  "Add heartbeat to heartbeats and track last addition.
+  "Add HEARTBEAT to heartbeats and track last addition.
 
 Only adds heartbeat if same entity (file/app) has not been added
 to the heartbeat last in past 2 minutes"
@@ -141,6 +142,7 @@ to the heartbeat last in past 2 minutes"
       (write-region (point-min) (point-max) wakame-cache-file nil 'quiet))))
 
 (defun wakame--handle-save()
+  "Handler for buffer saves."
   (wakame--add-heartbeat (wakame--create-heartbeat t)))
 
 (defun wakame--buffer-change(&optional frame)
@@ -149,12 +151,14 @@ to the heartbeat last in past 2 minutes"
 
 (defun wakame-mode--enable()
   "Add hooks to enable wakame tracking."
+  ;; TODO: Set timer
   (add-to-list 'window-selection-change-functions #'wakame--buffer-change)
   (add-hook 'first-change-hook 'wakame--buffer-change nil t)
   (add-hook 'after-save-hook #'wakame--handle-save nil t))
 
 (defun wakame-mode--disable()
   "Remove hooks and disable wakame tracking."
+  ;; TODO: Remove timer
   (setq window-selection-change-functions (delete #'wakame--buffer-change window-selection-change-functions))
   (remove-hook 'after-save-hook #'wakame--handle-save t)
   (remove-hook 'first-change-hook #'wakame--buffer-change t))

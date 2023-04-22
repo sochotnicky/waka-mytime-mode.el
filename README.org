@@ -27,3 +27,5 @@ implementation we get:
 - Hard dependencies on magit and maybe others
 - No hooks, ignores etc to tweak behaviour easily
 - Document API key setup (and usage)
+- Post heartbeats using batches
+- Prevent autosaves from triggering save events (see wakapi-mode)
