@@ -26,7 +26,8 @@ implementation we get:
   parses user agent to detect these.
 - Hard dependencies on magit and maybe others
 
-* TODO
+* TODOs
+
 - Support for hook, overrides, ignores etc to tweak behaviour easily
 - Document API key setup (and usage)
 - Prevent autosaves from triggering save events (see wakapi-mode)
