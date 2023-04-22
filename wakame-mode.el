@@ -53,6 +53,9 @@
 (defvar wakame--heartbeats '()
   "List of heartbeats yet to be sent to wakatime.")
 
+(defvar wakame--idle-timer nil
+  "Idle timer for posting heartbeats")
+
 (defun wakame--pretty-mode()
   "Return nice human-readable type of current file/buffer."
   (if (buffer-file-name)
@@ -114,6 +117,31 @@ If SAVEP is non-nil record writing heartbeat"
      t
      t))))
 
+(defun wakame--send-all-heartbeats ()
+  "Sends next batch of 25 heartbeats using bulk API endpoint."
+  (if-let* ((url-request-method "POST")
+            (current-heartbeats (last wakame--heartbeats 25))
+            (url-request-data (json-encode current-heartbeats))
+            (secret (car (auth-source-search :host (url-host (url-generic-parse-url wakame-api-url))
+                                             :user "wakame" :max 1)))
+            (url-request-extra-headers
+             `(("Authorization" . ,(format "Basic %s" (base64-encode-string (funcall (plist-get secret :secret)))))
+               ("Content-Type" . "application/json")
+               ("X-Machine-Name" . ,(system-name)))))
+      (progn
+        (url-retrieve
+         (format "%s/heartbeats" wakame-api-url)
+         (lambda(status cbargs)
+           (if (plist-member status :error)
+               (error "Error posting heartbeats: %s" (plist-member status :error))
+             (progn
+               (setq wakame--heartbeats (butlast wakame--heartbeats 25))
+               ;; TODO: Fix ugly recursive call
+               (wakame--send-all-heartbeats))))
+         (list url-request-data)
+         t
+         t))))
+
 (defun wakame--add-heartbeat(heartbeat)
   "Add HEARTBEAT to heartbeats and track last addition.
 
@@ -155,15 +183,12 @@ to the heartbeat last in past 2 minutes"
 (define-minor-mode wakame-mode
   "Toggle WakaMeMode (WakaTime Native mode)."
   :init-value nil
-  :global     nil
+  :global     t
   :group      'wakame
   (cond
     (noninteractive (setq wakame-mode nil))
     (wakame-mode (wakame-mode--enable))
     (t (wakame-mode--disable))))
-
-;;;###autoload
-(define-globalized-minor-mode global-wakame-mode wakame-mode (lambda () (wakame-mode 1)))
 
 (provide 'wakame-mode)
 ;;; wakame-mode.el ends here
