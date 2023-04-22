@@ -128,37 +128,25 @@ to the heartbeat last in past 2 minutes"
           (setq wakame--last-heartbeat-entity (alist-get 'entity heartbeat))
           (add-to-list 'wakame--heartbeats heartbeat)))))
 
-(defun wakame-mode--save-heartbeat(heartbeat)
-  (if (file-exists-p wakame-cache-file)
-      (with-temp-buffer
-        (insert-file-contents wakame-cache-file)
-        (setq-local cache-data (read (current-buffer)))
-        (add-to-list 'cache-data heartbeat)
-        (delete-region (point-min) (point-max))
-        (insert (prin1-to-string cache-data))
-        (write-region (point-min) (point-max) wakame-cache-file nil 'quiet))
-    (with-temp-buffer
-      (insert (prin1-to-string (cons heartbeat '())))
-      (write-region (point-min) (point-max) wakame-cache-file nil 'quiet))))
-
 (defun wakame--handle-save()
-  "Handler for buffer saves."
+  "Handler for buffer save."
   (wakame--add-heartbeat (wakame--create-heartbeat t)))
 
 (defun wakame--buffer-change(&optional frame)
-  "Handler for buffer focus changes."
+  "Handler for buffer focus change."
   (wakame--add-heartbeat (wakame--create-heartbeat nil)))
 
 (defun wakame-mode--enable()
   "Add hooks to enable wakame tracking."
   ;; TODO: Set timer
+  (setq wakame--idle-timer (run-with-idle-timer 10 t #'wakame--send-all-heartbeats))
   (add-to-list 'window-selection-change-functions #'wakame--buffer-change)
   (add-hook 'first-change-hook 'wakame--buffer-change nil t)
   (add-hook 'after-save-hook #'wakame--handle-save nil t))
 
 (defun wakame-mode--disable()
   "Remove hooks and disable wakame tracking."
-  ;; TODO: Remove timer
+  (if (timerp wakame--idle-timer) (cancel-timer wakame--idle-timer))
   (setq window-selection-change-functions (delete #'wakame--buffer-change window-selection-change-functions))
   (remove-hook 'after-save-hook #'wakame--handle-save t)
   (remove-hook 'first-change-hook #'wakame--buffer-change t))
