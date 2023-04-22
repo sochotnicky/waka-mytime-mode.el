@@ -17,7 +17,7 @@ implementation we get:
   as "app" type
 
 
-* Known Issues/TODOs
+* Known Issues
 
 - Language detection works differently. For example instead of "Emacs Lisp" we
   report "Elisp". This works with wakapi, but might be rejected by wakatime.com
@@ -25,7 +25,8 @@ implementation we get:
 - We spoof user agent because wakapi ignores editor/OS in heartbeats and instead
   parses user agent to detect these.
 - Hard dependencies on magit and maybe others
-- No hooks, ignores etc to tweak behaviour easily
+
+* TODO
+- Support for hook, overrides, ignores etc to tweak behaviour easily
 - Document API key setup (and usage)
-- Post heartbeats using batches
 - Prevent autosaves from triggering save events (see wakapi-mode)
