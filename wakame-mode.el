@@ -115,7 +115,7 @@ If SAVEP is non-nil record writing heartbeat"
              (progn
                (setq wakame--heartbeats (butlast wakame--heartbeats 25))
                ;; TODO: Fix ugly recursive call
-               (wakame--send-all-heartbeats))))
+               (run-with-timer 1 nil #'wakame--send-all-heartbeats))))
          (list url-request-data)
          t
          t))))
