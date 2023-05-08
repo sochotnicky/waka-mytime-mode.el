@@ -30,6 +30,8 @@
 (require 'magit-git)
 (require 'project)
 (require 'json)
+(require 'auth-source)
+(require 'url-parse)
 
 (defconst wakame-mode-version "0.0.1")
 (defconst wakame-mode-user-agent "emacs-wakatime")
