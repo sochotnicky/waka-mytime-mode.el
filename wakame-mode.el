@@ -101,7 +101,7 @@ If SAVEP is non-nil record writing heartbeat"
   "Sends next batch of 25 heartbeats using bulk API endpoint."
   (if-let* ((url-request-method "POST")
             (current-heartbeats (last wakame--heartbeats 25))
-            (url-request-data (json-encode current-heartbeats))
+            (url-request-data (encode-coding-string (json-encode current-heartbeats) 'utf-8))
             (secret (car (auth-source-search :host (url-host (url-generic-parse-url wakame-api-url))
                                              :user "wakame" :max 1)))
             (url-request-extra-headers
