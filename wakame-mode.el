@@ -85,6 +85,15 @@
   (or (buffer-file-name)
       (symbol-name major-mode)))
 
+(defun wakame--git-branch-name ()
+  "Get current git branch name."
+  (let ((args '("symbolic-ref" "HEAD" "--short")))
+    (with-temp-buffer
+      (apply #'process-file "git" nil (list t nil) nil args)
+      (unless (bobp)
+        (goto-char (point-min))
+        (buffer-substring-no-properties (point) (line-end-position))))))
+
 (defun wakame--create-heartbeat(savep)
   "Return a new heartbeat.
 
@@ -92,7 +101,7 @@ If SAVEP is non-nil record writing heartbeat"
   `(
     (type . ,(wakame--current-type))
     (time . ,(float-time))
-    (branch . ,(magit-get-current-branch))
+    (branch . ,(wakame--git-branch-name))
     (project . ,(if (project-current) (project-name (project-current)) ""))
     (language . ,(wakame--pretty-mode))
     (is_write . ,savep)
