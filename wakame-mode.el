@@ -52,6 +52,9 @@
   :type 'string
   :group 'wakame)
 
+(defvar wakame--secret '()
+  "Secret for given wakame server from auth-source")
+
 (defvar wakame--heartbeats '()
   "List of heartbeats yet to be sent to wakatime.")
 
@@ -97,15 +100,14 @@ If SAVEP is non-nil record writing heartbeat"
     (user_agent . ,(format "wakatime/unset (linux-unset) Emacs emacs-wakatime/1.0"))
     (entity . ,(wakame--current-entity))))
 
+
 (defun wakame--send-all-heartbeats ()
   "Sends next batch of 25 heartbeats using bulk API endpoint."
   (if-let* ((url-request-method "POST")
             (current-heartbeats (last wakame--heartbeats 25))
             (url-request-data (encode-coding-string (json-encode current-heartbeats) 'utf-8))
-            (secret (car (auth-source-search :host (url-host (url-generic-parse-url wakame-api-url))
-                                             :user "wakame" :max 1)))
             (url-request-extra-headers
-             `(("Authorization" . ,(format "Basic %s" (base64-encode-string (funcall (plist-get secret :secret)))))
+             `(("Authorization" . ,(format "Basic %s" (base64-encode-string (funcall (plist-get wakame--secret :secret)))))
                ("Content-Type" . "application/json")
                ("X-Machine-Name" . ,(system-name)))))
       (progn
@@ -115,9 +117,9 @@ If SAVEP is non-nil record writing heartbeat"
            (if (plist-member status :error)
                (error "Error posting heartbeats: %s" (plist-member status :error))
              (progn
+               (message "Sent %s heartbeats to wakatime." (length current-heartbeats))
                (setq wakame--heartbeats (butlast wakame--heartbeats 25))
-               ;; TODO: Fix ugly recursive call
-               (run-with-timer 1 nil #'wakame--send-all-heartbeats))))
+               (wakame--send-all-heartbeats))))
          (list url-request-data)
          t
          t))))
@@ -146,7 +148,9 @@ to the heartbeat last in past 2 minutes"
 
 (defun wakame-mode--enable()
   "Add hooks to enable wakame tracking."
-  (setq wakame--idle-timer (run-with-idle-timer 10 t #'wakame--send-all-heartbeats))
+  (setq wakame--secret (car (auth-source-search :host (url-host (url-generic-parse-url wakame-api-url))
+                                                :user "wakame" :max 1)))
+  (setq wakame--idle-timer (run-with-idle-timer 10 t (lambda() (wakame--send-all-heartbeats))))
   (add-to-list 'window-selection-change-functions #'wakame--buffer-change)
   (add-hook 'first-change-hook 'wakame--buffer-change nil t)
   (add-hook 'after-save-hook #'wakame--handle-save nil t))
@@ -165,9 +169,9 @@ to the heartbeat last in past 2 minutes"
   :global     t
   :group      'wakame
   (cond
-    (noninteractive (setq wakame-mode nil))
-    (wakame-mode (wakame-mode--enable))
-    (t (wakame-mode--disable))))
+   (noninteractive (setq wakame-mode nil))
+   (wakame-mode (wakame-mode--enable))
+   (t (wakame-mode--disable))))
 
 (provide 'wakame-mode)
 ;;; wakame-mode.el ends here
