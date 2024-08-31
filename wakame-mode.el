@@ -47,7 +47,7 @@
   :type 'string
   :group 'wakame)
 
-(defcustom wakame-cache-file (file-name-concat (xdg-cache-home) "wakame-mode.cache")
+(defcustom wakame-cache-file (file-name-concat (or (getenv "XDG_CACHE_HOME") "~/.cache/") "wakame-mode.cache")
   "File path used for caching WakaTime heartbeats when offline."
   :type 'string
   :group 'wakame)
